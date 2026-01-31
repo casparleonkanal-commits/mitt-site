@@ -290,6 +290,11 @@ Genre: ${currentTrack.genres}
 }
 
 function nextAfterAnswer() {
+     if (!answered) {
+        alert("Kolla svaret först!");
+        return;
+    }
+
     nextSong();
 }
 
