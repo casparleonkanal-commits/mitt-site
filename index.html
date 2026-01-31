@@ -157,17 +157,25 @@ const TRACKS = [
 let currentTrack = null;
 
 function newSong() {
-    const index = Math.floor(Math.random() * TRACKS.length);
+    if (TRACKS.length === 0) return;
+
+    let index;
+    do {
+        index = Math.floor(Math.random() * TRACKS.length);
+    } while (currentTrack && TRACKS[index].uri === currentTrack.uri);
+
     currentTrack = TRACKS[index];
 
+    // Lägg till en liten random parameter för att tvinga reload av iframe
     document.getElementById("spotifyPlayer").src =
-        "https://open.spotify.com/embed/track/" + currentTrack.uri;
+        "https://open.spotify.com/embed/track/" + currentTrack.uri + "?rand=" + Math.random();
 
     document.getElementById("result").textContent = "";
     document.getElementById("decadeInput").value = "";
     document.getElementById("genreInput").value = "";
     document.getElementById("artistInput").value = "";
 }
+
 
 function normalize(text) {
     return (text || "").toString().trim().toLowerCase();
