@@ -9,14 +9,68 @@ body {
     max-width: 500px;
     margin: auto;
     padding: 20px;
+    background: #f2f2f2;
 }
+
+button {
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    cursor: pointer;
+}
+
 input {
     width: 100%;
     padding: 6px;
     margin-bottom: 10px;
+    box-sizing: border-box;
 }
-button {
-    padding: 8px 12px;
+
+.player-wrapper {
+    position: relative;
+    width: 100%;
+    height: 380px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.player-wrapper iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+.player-wrapper .overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    opacity: 1;
+    z-index: 2;
+    pointer-events: none;
+    border-radius: 8px;
+}
+
+.player-wrapper .overlay::after {
+    content: '';
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    background: #fff;
+    border-radius: 50%;
+    top: 85%;
+    left: 420px;
+    transform: translateY(-60%);
+    opacity: 0.8;
+}
+
+#result {
+    font-weight: bold;
+    margin-top: 10px;
 }
 </style>
 </head>
@@ -26,19 +80,20 @@ button {
 
 <button onclick="newSong()">Ny låt</button>
 
-<br><br>
-
-<iframe
-    id="spotifyPlayer"
-    width="100%"
-    height="380"
-    frameborder="0"
-    allow="encrypted-media">
-</iframe>
+<div class="player-wrapper">
+    <iframe
+        id="spotifyPlayer"
+        width="100%"
+        height="380"
+        frameborder="0"
+        allow="encrypted-media">
+    </iframe>
+    <div class="overlay"></div>
+</div>
 
 <h3>Gissa</h3>
 
-<input id="decadeInput" placeholder="Årtionde (t.ex. 2010-tal)">
+<input id="decadeInput" placeholder="Årtionde (t.ex. 2010, 1990)">
 <input id="genreInput" placeholder="Genre (t.ex. pop)">
 <input id="artistInput" placeholder="Artist">
 
@@ -47,95 +102,110 @@ button {
 <p id="result"></p>
 
 <script>
-
-/*
-==================================================
-HÄR hårdkodar du hela spellistan
-==================================================
-*/
-
-const songs = [
-    {
-        spotifyId: "4hQ6UGyWQIGJmH1ZQf9t3v",
-        artist: "Avicii",
-        decade: "2010-tal",
-        genre: "EDM"
-    },
-    {
-        spotifyId: "3S2R0EVwBSAVMd5UMgKTL0",
-        artist: "Michael Jackson",
-        decade: "80-tal",
-        genre: "Pop"
-    }
-
-    // Lägg fler låtar här
+const TRACKS = [
+  {artist:"Robert Johnson", title:"Me and the Devil Blues", genres:"blues, classic blues, country", album:"King Of The Delta Blues Singers", year:1937, uri:"1QCUrXrY1qlxRhL3a9LYCA"},
+  {artist:"The Carter Family", title:"Can the Circle Be Unbroken", genres:"bluegrass, traditional, country", album:"Music's First Family", year:1935, uri:"07IuSThN6YHAAollCnu1Ln"},
+  {artist:"The Carter Family", title:"Wildwood Flower", genres:"bluegrass, traditional, country", album:"Family", year:1935, uri:"6LXh42hEpcVLKtUgVkiKZi"},
+  {artist:"Muddy Waters", title:"Got My Mojo Working", genres:"blues, country blues", album:"The Chess Box", year:1957, uri:"18n0zch7bRo453Iwq98xYf"},
+  {artist:"Muddy Waters", title:"I'm Your Hoochie Coochie Man", genres:"blues, country blues", album:"King Of The Electric Blues", year:1954, uri:"3KSchPNSklO5McIqRH3qYX"},
+  {artist:"Sister Rosetta Tharpe", title:"Every Day", genres:"blues, gospel, classic blues", album:"Presenting Sister Rosetta Tharpe", year:1939, uri:"7reHZ96jmr05bCLe2yMsHc"},
+  {artist:"Bill Haley & His Comets", title:"Rock Around the Clock", genres:"rockabilly, rock and roll, doo-wop", album:"Las Grandes Leyendas Del Rock, Vol. 1", year:1954, uri:"41iti2jnVYqhlxWMcGsDa8"},
+  {artist:"Elvis Presley", title:"Hound Dog", genres:"rockabilly, rock and roll", album:"Elvis 30 #1 Hits (Expanded Edition)", year:1956, uri:"4l9rJRwlaMnPYD5DJtIIFo"},
+  {artist:"Elvis Presley", title:"Blue Suede Shoes", genres:"rockabilly, rock and roll", album:"Elvis 30 #1 Hits", year:1956, uri:"5eejdO6tuHjbPzV93rDAAj"},
+  {artist:"Little Richard", title:"Good Golly, Miss Molly", genres:"rockabilly, rock and roll, boogie-woogie", album:"Good Golly!", year:1958, uri:"0ZvgXNstN4o2ZXPomtBYVp"},
+  {artist:"Little Richard", title:"Tutti Frutti", genres:"rockabilly, rock and roll, boogie-woogie", album:"Here's Little Richard (Deluxe)", year:1957, uri:"2iXcvnD3d1gfLBum0cE5Eg"},
+  {artist:"Chuck Berry", title:"Johnny B. Goode", genres:"rockabilly, rock and roll", album:"Top", year:1959, uri:"2QfiRTz5Yc8DdShCxG1tB2"},
+  {artist:"Buddy Holly & The Crickets", title:"Peggy Sue", genres:"rockabilly, rock and roll, doo-wop", album:"Buddy Holly;The Crickets", year:1958, uri:"2OARIMw1hpehr86Iwmv04c"},
+  {artist:"The Beatles", title:"Twist And Shout", genres:"classic rock, psychedelic rock", album:"Please Please Me (Remastered)", year:1963, uri:"5ZBeML7Lf3FMEVviTyvi8l"},
+  {artist:"The Beatles", title:"Let It Be", genres:"classic rock, psychedelic rock", album:"Let It Be (Remastered)", year:1970, uri:"7iN1s7xHE4ifF5povM6A48"},
+  {artist:"The Rolling Stones", title:"(I Can't Get No) Satisfaction", genres:"classic rock, rock", album:"Out Of Our Heads", year:1965, uri:"2PzU4IB8Dr6mxV3lHuaG34"},
+  {artist:"The Rolling Stones", title:"It's Only Rock'n'Roll (But I Like It)", genres:"classic rock, rock", album:"It's Only Rock 'N' Roll", year:1974, uri:"668YgsnvdNBHfRscNIBS31"},
+  {artist:"Bob Dylan", title:"The Times They Are A-Changin'", genres:"folk rock, folk, singer-songwriter", album:"The Times They Are A-Changin'", year:1964, uri:"52vA3CYKZqZVdQnzRrdZt6"},
+  {artist:"Bob Dylan", title:"Blowin' in the Wind", genres:"folk rock, folk, singer-songwriter", album:"The Freewheelin' Bob Dylan", year:1963, uri:"18GiV1BaXzPVYpp9rmOg0E"},
+  {artist:"Jimi Hendrix", title:"Purple Haze", genres:"psychedelic rock, rock, blues rock", album:"Are You Experienced", year:1967, uri:"0wJoRiX5K5BxlqZTolB2LD"},
+  {artist:"Janis Joplin", title:"Piece of My Heart", genres:"classic rock, psychedelic rock", album:"Piece of My Heart", year:1968, uri:"3V3MQOlQqq8SZ7BcoN4QCn"},
+  {artist:"Black Sabbath", title:"Paranoid", genres:"metal, heavy metal, hard rock", album:"Paranoid", year:1970, uri:"0TI8TP4FitVPoEHPTySx48"},
+  {artist:"Led Zeppelin", title:"Immigrant Song", genres:"classic rock, hard rock", album:"Led Zeppelin III", year:1970, uri:"78lgmZwycJ3nzsdgmPPGNx"},
+  {artist:"David Bowie", title:"Space Oddity", genres:"glam rock, art rock", album:"Space Oddity", year:1969, uri:"72Z17vmmeQKAg8bptWvpVG"},
+  {artist:"Queen", title:"Bohemian Rhapsody", genres:"classic rock, glam rock", album:"A Night at the Opera", year:1975, uri:"3z8h0TU7ReDPLIbEnYhWZb"},
+  {artist:"Queen", title:"We Will Rock You", genres:"classic rock, glam rock", album:"News Of The World", year:1977, uri:"4pbJqGIASGPr0ZpGpnWkDn"},
+  {artist:"Pink Floyd", title:"Another Brick In The Wall, Pt. 2", genres:"progressive rock, psychedelic rock", album:"The Wall", year:1979, uri:"7rPzEczIS574IgPaiPieS3"},
+  {artist:"Sex Pistols", title:"God Save The Queen", genres:"punk, proto-punk", album:"Never Mind The Bollocks", year:1977, uri:"2mHchPRtQWet3iIS3jANr1"},
+  {artist:"Sex Pistols", title:"Anarchy In The UK", genres:"punk, proto-punk", album:"Never Mind The Bollocks", year:1977, uri:"5moTxUGPZXgGmosl4rIELm"},
+  {artist:"James Brown", title:"I Got You (I Feel Good)", genres:"funk, soul, motown, classic soul", album:"I Got You (I Feel Good) (Anniversary Collection)", year:1965, uri:"2LZdFnXIXuky0S0Jhdl4Qz"},
+  {artist:"Grandmaster Flash & The Sugarhill Gang", title:"Rapper's Delight", genres:"old school hip hop, funk", album:"The Best of The Sugarhill Gang", year:1979, uri:"4IUVLtJEf5k9PIXXTlZy9L"},
+  {artist:"Michael Jackson", title:"Billie Jean", genres:"pop, dance-pop, funk, R&B", album:"Thriller", year:1982, uri:"7J1uxwnxfQLu4APicE5Rnj"},
+  {artist:"Michael Jackson", title:"Thriller", genres:"pop, dance-pop, funk, R&B", album:"Thriller", year:1982, uri:"3S2R0EVwBSAVMd5UMgKTL0"},
+  {artist:"Whitney Houston", title:"I Wanna Dance with Somebody (Who Loves Me)", genres:"pop, dance-pop", album:"Whitney", year:1987, uri:"2tUBqZG2AbRi7Q0BIrVrEj"},
+  {artist:"Iron Maiden", title:"Run to the Hills", genres:"heavy metal, metal, hard rock", album:"The Number of the Beast", year:1982, uri:"4Zc7TCHzuNwL0AFBlyLdyr"},
+  {artist:"Iron Maiden", title:"The Trooper", genres:"heavy metal, metal, hard rock", album:"Piece of Mind", year:1983, uri:"4OROzZUy6gOWN4UGQVaZMF"},
+  {artist:"Metallica", title:"Master of Puppets", genres:"metal, thrash metal, rock", album:"Master Of Puppets", year:1986, uri:"2MuWTIM3b0YEAskbeeFE1i"},
+  {artist:"Metallica", title:"Nothing Else Matters", genres:"metal, rock", album:"Metallica", year:1991, uri:"0nLiqZ6A27jJri2VCalIUs"},
+  {artist:"Steve 'Silk' Hurley", title:"Jack Your Body", genres:"house, chicago house", album:"Jack Your Body", year:1986, uri:"10QGhgqQm0I2Y9maxrM7T6"},
+  {artist:"SNAP!", title:"The Rhythm Is A Dancer", genres:"eurodance", album:"The Madman's Return", year:1992, uri:"1IWzfq3sLedGQ3fb2hAMBA"},
+  {artist:"Nirvana", title:"Smells Like Teen Spirit", genres:"grunge, rock", album:"Nevermind", year:1991, uri:"4CeeEOM32jQcH3eN9Q2dGj"},
+  {artist:"Spice Girls", title:"Wannabe", genres:"pop", album:"Spice", year:1996, uri:"1Je1IMUlBXcx1Fz0WE7oPT"},
+  {artist:"Backstreet Boys", title:"I Want It That Way", genres:"pop", album:"Millennium", year:1999, uri:"47BBI51FKFwOMlIiX6m8ya"},
+  {artist:"Avicii", title:"Wake Me Up", genres:"EDM, pop", album:"True", year:2013, uri:"0nrRP2bk19rLc0orkWPQk2"},
+  {artist:"Bee Gees", title:"Stayin' Alive", genres:"disco, pop", album:"Saturday Night Fever", year:1977, uri:"2RlgNHKcydI9sayD2Df2xp"},
+  {artist:"Kraftwerk", title:"The Robots", genres:"electronic, krautrock", album:"The Man-Machine", year:1978, uri:"2Foc5Q5nqNiosCNqttzHof"},
+  {artist:"Kraftwerk", title:"Autobahn", genres:"electronic, krautrock", album:"Autobahn", year:1974, uri:"0Xf6RZTlRDBK5WQF3Xz6dn"},
+  {artist:"Aretha Franklin", title:"Respect", genres:"soul, R&B", album:"I Never Loved a Man the Way I Love You", year:1967, uri:"4kflIGfjdZJW4ot2ioixTB"}
 ];
 
-let currentSong = null;
+
+let currentTrack = null;
 
 function newSong() {
+    const index = Math.floor(Math.random() * TRACKS.length);
+    currentTrack = TRACKS[index];
 
-    if (songs.length === 0) {
-        alert("Inga låtar finns i listan!");
-        return;
-    }
-
-    const index = Math.floor(Math.random() * songs.length);
-    currentSong = songs[index];
-
-    const iframe = document.getElementById("spotifyPlayer");
-    iframe.src =
-        "https://open.spotify.com/embed/track/" +
-        currentSong.spotifyId;
+    document.getElementById("spotifyPlayer").src =
+        "https://open.spotify.com/embed/track/" + currentTrack.uri;
 
     document.getElementById("result").textContent = "";
-
     document.getElementById("decadeInput").value = "";
     document.getElementById("genreInput").value = "";
     document.getElementById("artistInput").value = "";
 }
 
 function normalize(text) {
-    return text.trim().toLowerCase();
+    return (text || "").toString().trim().toLowerCase();
+}
+
+// Omvandla helt årtal till tiotal, t.ex. 1957 → 1950-tal
+function yearToDecade(year) {
+    if (!year) return "";
+    const decadeStart = Math.floor(year / 10) * 10;
+    return decadeStart;
 }
 
 function checkAnswer() {
-
-    if (!currentSong) {
+    if (!currentTrack) {
         alert("Tryck på 'Ny låt' först!");
         return;
     }
 
-    const decade = normalize(
-        document.getElementById("decadeInput").value
-    );
-    const genre = normalize(
-        document.getElementById("genreInput").value
-    );
-    const artist = normalize(
-        document.getElementById("artistInput").value
-    );
+    const userDecade = normalize(document.getElementById("decadeInput").value);
+    const userGenre = normalize(document.getElementById("genreInput").value);
+    const userArtist = normalize(document.getElementById("artistInput").value);
 
-    const correctDecade = normalize(currentSong.decade);
-    const correctGenre = normalize(currentSong.genre);
-    const correctArtist = normalize(currentSong.artist);
+    const correctDecade = normalize(yearToDecade(currentTrack.year)); // t.ex. "1950-tal"
+    const correctArtist = normalize(currentTrack.artist);
+    const correctGenres = currentTrack.genres.split(',').map(g => normalize(g));
+
+    const userGenres = userGenre.split(',').map(g => normalize(g));
 
     let points = 0;
-
-    if (decade === correctDecade) points++;
-    if (genre === correctGenre) points++;
-    if (artist === correctArtist) points++;
+    if (userDecade && userDecade === correctDecade) points++;
+    if (userGenre && userGenres.some(g => correctGenres.includes(g))) points++;
+    if (userArtist && userArtist === correctArtist) points++;
 
     document.getElementById("result").textContent =
-        "Du fick " + points + " / 3 rätt. " +
-        "Rätt svar: " +
-        currentSong.artist + ", " +
-        currentSong.genre + ", " +
-        currentSong.decade;
+        `Du fick ${points} / 3 rätt. Rätt svar: Artist: ${currentTrack.artist}, Genre: ${currentTrack.genres}, Årtionde: ${yearToDecade(currentTrack.year)}`;
 }
 
 </script>
 
 </body>
 </html>
-
