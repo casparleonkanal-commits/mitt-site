@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Gissa låten – Spotify</title>
+
 <style>
 body {
     font-family: Arial, sans-serif;
@@ -72,13 +73,21 @@ input {
     font-weight: bold;
     margin-top: 10px;
 }
+
+#counter {
+    margin-bottom: 10px;
+    font-weight: bold;
+}
 </style>
 </head>
+
 <body>
 
 <h2>🎧 Gissa låten (Spotify)</h2>
 
-<button onclick="newSong()">Ny låt</button>
+<button id="startBtn" onclick="startGame()">Starta quiz</button>
+
+<div id="counter"></div>
 
 <div class="player-wrapper">
     <iframe
@@ -93,11 +102,16 @@ input {
 
 <h3>Gissa</h3>
 
-<input id="decadeInput" placeholder="Årtionde (t.ex. 2010, 1990)">
+<input id="decadeInput" placeholder="År (t.ex. 1957 eller 1990)">
 <input id="genreInput" placeholder="Genre (t.ex. pop)">
 <input id="artistInput" placeholder="Artist">
 
 <button onclick="checkAnswer()">Kolla svar</button>
+<button onclick="nextAfterAnswer()">Nästa låt</button>
+
+<button id="againBtn" onclick="startGame()" style="display:none;">
+Kör igen
+</button>
 
 <p id="result"></p>
 
@@ -150,25 +164,56 @@ const TRACKS = [
   {artist:"Bee Gees", title:"Stayin' Alive", genres:"disco, pop", album:"Saturday Night Fever", year:1977, uri:"4UDmDIqJIbrW0hMBQMFOsM"},
   {artist:"Kraftwerk", title:"The Robots", genres:"electronic, krautrock", album:"The Man-Machine", year:1978, uri:"5eqZWYQ5tbIehx00NeKXz7"},
   {artist:"Kraftwerk", title:"Autobahn", genres:"electronic, krautrock", album:"Autobahn", year:1974, uri:"0Xf6RZTlRDBK5WQF3Xz6dn"},
-  {artist:"Aretha Franklin", title:"Respect", genres:"soul, R&B", album:"I Never Loved a Man the Way I Love You", year:1967, uri:"4kflIGfjdZJW4ot2ioixTB"}
+  {artist:"Aretha Franklin", title:"Respect", genres:"soul, R&B", album:"I Never Loved a Man the Way I Love You", year:1967, uri:"7s25THrKz86DM225dOYwnr"}
 ];
 
-
+let shuffledTracks = [];
+let currentIndex = 0;
 let currentTrack = null;
+let totalPoints = 0;
+let maxPoints = 0;
+let answered = false;
 
-function newSong() {
-    if (TRACKS.length === 0) return;
+function startGame() {
+    shuffledTracks = shuffle([...TRACKS]);
+    currentIndex = 0;
+    totalPoints = 0;
+    maxPoints = shuffledTracks.length * 3;
+    answered = false;
 
-    let index;
-    do {
-        index = Math.floor(Math.random() * TRACKS.length);
-    } while (currentTrack && TRACKS[index].uri === currentTrack.uri);
+    document.getElementById("startBtn").style.display = "none";
+    document.getElementById("againBtn").style.display = "none";
 
-    currentTrack = TRACKS[index];
+    nextSong();
+}
 
-    // Lägg till en liten random parameter för att tvinga reload av iframe
-    document.getElementById("spotifyPlayer").src =
-        "https://open.spotify.com/embed/track/" + currentTrack.uri + "?rand=" + Math.random();
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+function nextSong() {
+
+    if (currentIndex >= shuffledTracks.length) {
+        endGame();
+        return;
+    }
+
+    currentTrack = shuffledTracks[currentIndex];
+    currentIndex++;
+    answered = false;
+
+    document.getElementById("counter").textContent =
+        "Låt " + currentIndex + " / " + shuffledTracks.length;
+
+    const iframe = document.getElementById("spotifyPlayer");
+    iframe.src =
+        "https://open.spotify.com/embed/track/" +
+        currentTrack.uri +
+        "?rand=" + Math.random();
 
     document.getElementById("result").textContent = "";
     document.getElementById("decadeInput").value = "";
@@ -176,46 +221,89 @@ function newSong() {
     document.getElementById("artistInput").value = "";
 }
 
-
 function normalize(text) {
-    return (text || "").toString().trim().toLowerCase();
+    return (text ?? "").toString().trim().toLowerCase();
 }
 
-// Omvandla helt årtal till tiotal, t.ex. 1957 → 1950-tal
 function yearToDecade(year) {
-    if (!year) return "";
-    const decadeStart = Math.floor(year / 10) * 10;
-    return decadeStart;
+    const decade = Math.floor(year / 10) * 10;
+    return decade + "-tal";
+}
+
+function parseUserDecade(input) {
+
+    input = input.trim();
+
+    if (/^\d{4}$/.test(input)) {
+        return normalize(yearToDecade(parseInt(input)));
+    }
+
+    if (/^\d{3,4}$/.test(input)) {
+        return normalize(input + "-tal");
+    }
+
+    return normalize(input);
 }
 
 function checkAnswer() {
-    if (!currentTrack) {
-        alert("Tryck på 'Ny låt' först!");
-        return;
-    }
 
-    const userDecade = normalize(document.getElementById("decadeInput").value);
-    const userGenre = normalize(document.getElementById("genreInput").value);
-    const userArtist = normalize(document.getElementById("artistInput").value);
+    if (!currentTrack || answered) return;
 
-    const correctDecade = normalize(yearToDecade(currentTrack.year)); // t.ex. "1950-tal"
-    const correctArtist = normalize(currentTrack.artist);
-    const correctGenres = currentTrack.genres.split(',').map(g => normalize(g));
+    const userDecade =
+        parseUserDecade(
+            document.getElementById("decadeInput").value
+        );
 
-    const userGenres = userGenre.split(',').map(g => normalize(g));
+    const userGenre =
+        normalize(document.getElementById("genreInput").value);
+
+    const userArtist =
+        normalize(document.getElementById("artistInput").value);
+
+    const correctDecade =
+        normalize(yearToDecade(currentTrack.year));
+
+    const correctArtist =
+        normalize(currentTrack.artist);
+
+    const correctGenres =
+        currentTrack.genres
+            .split(",")
+            .map(g => normalize(g));
 
     let points = 0;
+
     if (userDecade && userDecade === correctDecade) points++;
-    if (userGenre && userGenres.some(g => correctGenres.includes(g))) points++;
+    if (userGenre && correctGenres.includes(userGenre)) points++;
     if (userArtist && userArtist === correctArtist) points++;
 
+    totalPoints += points;
+    answered = true;
+
     document.getElementById("result").textContent =
-        `Du fick ${points} / 3 rätt. Rätt svar: Artist: ${currentTrack.artist}, Genre: ${currentTrack.genres}, Årtionde: ${yearToDecade(currentTrack.year)}`;
-
-
-    
+        `Du fick ${points}/3 på denna låt.
+Totalt: ${totalPoints}/${maxPoints}
+Rätt svar:
+${currentTrack.artist} – ${currentTrack.title}
+Genre: ${currentTrack.genres}
+Årtionde: ${yearToDecade(currentTrack.year)}`;
 }
 
+function nextAfterAnswer() {
+    nextSong();
+}
+
+function endGame() {
+
+    document.getElementById("spotifyPlayer").src = "";
+    document.getElementById("counter").textContent = "";
+
+    document.getElementById("result").textContent =
+        `🎉 Spelet klart!
+Totalt resultat: ${totalPoints} / ${maxPoints}`;
+
+    document.getElementById("againBtn").style.display = "inline-block";
+}
 </script>
 
 </body>
