@@ -1,1 +1,141 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<title>Gissa låten – Spotify</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    max-width: 500px;
+    margin: auto;
+    padding: 20px;
+}
+input {
+    width: 100%;
+    padding: 6px;
+    margin-bottom: 10px;
+}
+button {
+    padding: 8px 12px;
+}
+</style>
+</head>
+<body>
+
+<h2>🎧 Gissa låten (Spotify)</h2>
+
+<button onclick="newSong()">Ny låt</button>
+
+<br><br>
+
+<iframe
+    id="spotifyPlayer"
+    width="100%"
+    height="380"
+    frameborder="0"
+    allow="encrypted-media">
+</iframe>
+
+<h3>Gissa</h3>
+
+<input id="decadeInput" placeholder="Årtionde (t.ex. 2010-tal)">
+<input id="genreInput" placeholder="Genre (t.ex. pop)">
+<input id="artistInput" placeholder="Artist">
+
+<button onclick="checkAnswer()">Kolla svar</button>
+
+<p id="result"></p>
+
+<script>
+
+/*
+==================================================
+HÄR hårdkodar du hela spellistan
+==================================================
+*/
+
+const songs = [
+    {
+        spotifyId: "4hQ6UGyWQIGJmH1ZQf9t3v",
+        artist: "Avicii",
+        decade: "2010-tal",
+        genre: "EDM"
+    },
+    {
+        spotifyId: "3S2R0EVwBSAVMd5UMgKTL0",
+        artist: "Michael Jackson",
+        decade: "80-tal",
+        genre: "Pop"
+    }
+
+    // Lägg fler låtar här
+];
+
+let currentSong = null;
+
+function newSong() {
+
+    if (songs.length === 0) {
+        alert("Inga låtar finns i listan!");
+        return;
+    }
+
+    const index = Math.floor(Math.random() * songs.length);
+    currentSong = songs[index];
+
+    const iframe = document.getElementById("spotifyPlayer");
+    iframe.src =
+        "https://open.spotify.com/embed/track/" +
+        currentSong.spotifyId;
+
+    document.getElementById("result").textContent = "";
+
+    document.getElementById("decadeInput").value = "";
+    document.getElementById("genreInput").value = "";
+    document.getElementById("artistInput").value = "";
+}
+
+function normalize(text) {
+    return text.trim().toLowerCase();
+}
+
+function checkAnswer() {
+
+    if (!currentSong) {
+        alert("Tryck på 'Ny låt' först!");
+        return;
+    }
+
+    const decade = normalize(
+        document.getElementById("decadeInput").value
+    );
+    const genre = normalize(
+        document.getElementById("genreInput").value
+    );
+    const artist = normalize(
+        document.getElementById("artistInput").value
+    );
+
+    const correctDecade = normalize(currentSong.decade);
+    const correctGenre = normalize(currentSong.genre);
+    const correctArtist = normalize(currentSong.artist);
+
+    let points = 0;
+
+    if (decade === correctDecade) points++;
+    if (genre === correctGenre) points++;
+    if (artist === correctArtist) points++;
+
+    document.getElementById("result").textContent =
+        "Du fick " + points + " / 3 rätt. " +
+        "Rätt svar: " +
+        currentSong.artist + ", " +
+        currentSong.genre + ", " +
+        currentSong.decade;
+}
+
+</script>
+
+</body>
+</html>
 
