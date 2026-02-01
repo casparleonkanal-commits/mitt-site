@@ -271,7 +271,7 @@ function checkAnswer() {
         normalize(document.getElementById("artistInput").value);
 
     const correctDecade =
-        normalize(yearToDecade(currentTrack.year));
+    yearToDecadeNumber(currentTrack.year);
 
     const correctArtist =
         normalize(currentTrack.artist);
