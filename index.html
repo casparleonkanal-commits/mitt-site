@@ -225,25 +225,35 @@ function normalize(text) {
     return (text ?? "").toString().trim().toLowerCase();
 }
 
-function yearToDecade(year) {
-    const decade = Math.floor(year / 10) * 10;
-    return decade;
+function yearToDecadeNumber(year) {
+    // 1957 -> 50
+    return Math.floor((year % 100) / 10) * 10;
 }
 
 function parseUserDecade(input) {
 
     input = input.trim();
 
+    if (!input) return null;
+
+    // 1957
     if (/^\d{4}$/.test(input)) {
-        return normalize(yearToDecade(parseInt(input)));
+        return Math.floor((parseInt(input) % 100) / 10) * 10;
     }
 
-    if (/^\d{3,4}$/.test(input)) {
-        return normalize(input);
+    // 1950
+    if (/^\d{4}$/.test(input)) {
+        return Math.floor((parseInt(input) % 100) / 10) * 10;
     }
 
-    return normalize(input);
+    // 50
+    if (/^\d{2}$/.test(input)) {
+        return Math.floor(parseInt(input) / 10) * 10;
+    }
+
+    return null;
 }
+
 
 function checkAnswer() {
 
