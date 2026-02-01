@@ -239,7 +239,7 @@ function parseUserDecade(input) {
     }
 
     if (/^\d{3,4}$/.test(input)) {
-        return normalize(input + "-tal");
+        return normalize(input);
     }
 
     return normalize(input);
